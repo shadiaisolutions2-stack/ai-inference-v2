@@ -1,20 +1,20 @@
 # خدمة تحليل صور الأسنان
 
-خدمة FastAPI لتشغيل نموذج ONNX ذي 52 فئة. لا تستقبل هوية المريض أو العيادة، ولا تحفظ الصور أو تسجل محتواها. يتطلب endpoint مفتاح خدمة. يعمل النموذج من ملف ONNX محلي داخل مجلد `models/`.
+خدمة FastAPI لتشغيل نموذج ONNX ذي 83 فئة. لا تستقبل هوية المريض أو العيادة، ولا تحفظ الصور أو تسجل محتواها. يتطلب endpoint مفتاح خدمة. يعمل النموذج من ملف ONNX محلي داخل مجلد `models/`.
 
 ## النشر على Render
 
-اربط المستودع بـ Render وأنشئ خدمة Blueprint من `render.yaml`. يبني Docker النموذج من `models/best_model_upgraded.onnx` ويضبط `MODEL_PATH` تلقائياً. أدخل `INFERENCE_API_KEY` كـ Secret عند إنشاء الخدمة؛ يجب أن يكون المفتاح 32 حرفاً على الأقل، ولا تحفظه في Git. يستمع التطبيق إلى المنفذ الذي يمرره Render، مع `8000` كقيمة افتراضية محلية، ويتحقق Render من الجاهزية عبر `/health`.
+اربط المستودع بـ Render وأنشئ خدمة Blueprint من `render.yaml`. يبني Docker النموذج من `models/best_model_advanced.onnx` ويضبط `MODEL_PATH` تلقائياً. أدخل `INFERENCE_API_KEY` كـ Secret عند إنشاء الخدمة؛ يجب أن يكون المفتاح 32 حرفاً على الأقل، ولا تحفظه في Git. يستمع التطبيق إلى المنفذ الذي يمرره Render، مع `8000` كقيمة افتراضية محلية، ويتحقق Render من الجاهزية عبر `/health`.
 
 ## تشغيل واختبار محلي على Windows
 
 من PowerShell في مجلد المشروع:
 
 ```powershell
-Set-Location .\ai-inference
+Set-Location .\ai-inference-v2
 py -3.11 -m venv .venv-win311
 .\.venv-win311\Scripts\python.exe -m pip install -r .\requirements.txt
-$env:MODEL_PATH = "$PWD\models\best_model_upgraded.onnx"
+$env:MODEL_PATH = "$PWD\models\best_model_advanced.onnx"
 $line = Get-Content .\.env | Where-Object { $_ -match '^INFERENCE_API_KEY=' } | Select-Object -First 1
 $env:INFERENCE_API_KEY = ($line -replace '^INFERENCE_API_KEY=', '').Trim('"').Trim("'")
 if ($env:INFERENCE_API_KEY.Length -lt 32) { throw "INFERENCE_API_KEY is missing or too short." }
@@ -58,16 +58,16 @@ cloudflared tunnel --url http://localhost:8000
 
 ## النموذج والتحويل
 
-النموذج المعتمد هو `best_model_upgraded.pt` ذو 52 فئة. لتصديره محلياً من جذر المشروع، استخدم Ultralytics في بيئة التدريب:
+النموذج المعتمد هو `best_model_advanced.pt` ذو 83 فئة. لتصديره محلياً من جذر المشروع، استخدم Ultralytics في بيئة التدريب:
 
 ```python
 from ultralytics import YOLO
 
-model = YOLO("dental_ai_training/dental_ai_training/best_model_upgraded.pt")
-model.export(format="onnx", imgsz=1024, opset=12)
+model = YOLO("F:/ai-receptions/ai-inference/models/best (1).pt")
+model.export(format="onnx", imgsz=640, opset=12)
 ```
 
-انسخ ملف `best_model_upgraded.onnx` الناتج إلى `ai-inference/models/best_model_upgraded.onnx`. لا تضع أوزان النموذج في Git. تتحقق الخدمة عند بدء التشغيل من مدخل 1024 ومن 52 فئة في مخرجات ONNX. تحقق من أسماء الفئات ومقاييس النموذج على مجموعة تحقق قبل أي استخدام سريري.
+انسخ ملف `best_model_advanced.onnx` الناتج إلى `ai-inference-v2/models/best_model_advanced.onnx`. لا تضع أوزان النموذج في Git. تتحقق الخدمة عند بدء التشغيل من مدخل 1024 ومن 83 فئة في مخرجات ONNX. تحقق من أسماء الفئات ومقاييس النموذج على مجموعة تحقق قبل أي استخدام سريري.
 
 ## النشر على Oracle Cloud Free Tier (Ubuntu ARM)
 

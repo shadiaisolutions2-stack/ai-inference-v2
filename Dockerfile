@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
-    MODEL_PATH=/app/models/best_model_upgraded.onnx \
+    MODEL_PATH=/app/models/best_model_advanced.onnx \
     HF_HOME=/tmp/huggingface \
     IMAGE_SIZE=1024 \
     ORT_INTRA_OP_THREADS=2 \
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --requirement requirements.txt
 
 RUN useradd --create-home --uid 10001 appuser
 COPY --chown=appuser:appuser main.py .
-COPY --chown=appuser:appuser models/best_model_upgraded.onnx ./models/best_model_upgraded.onnx
+COPY --chown=appuser:appuser models/best_model_advanced.onnx ./models/best_model_advanced.onnx
 
 USER appuser
 EXPOSE 8000

@@ -6,11 +6,11 @@ services:
     restart: unless-stopped
     environment:
       INFERENCE_API_KEY: ${INFERENCE_API_KEY:?Set INFERENCE_API_KEY in .env}
-      MODEL_PATH: /models/best_model_upgraded.onnx
+      MODEL_PATH: /models/best_model_advanced.onnx
       HF_MODEL_REPO_ID: ${HF_MODEL_REPO_ID:-}
-      HF_MODEL_FILENAME: ${HF_MODEL_FILENAME:-best_model_upgraded.onnx}
+      HF_MODEL_FILENAME: ${HF_MODEL_FILENAME:-best_model_advanced.onnx}
       HF_TOKEN: ${HF_TOKEN:-}
-      MODEL_VERSION: ${MODEL_VERSION:-dental-yolo-52class}
+      MODEL_VERSION: ${MODEL_VERSION:-dental-yolo-83class}
       IMAGE_SIZE: "1024"
       ORT_INTRA_OP_THREADS: "2"
       PORT: "8000"
