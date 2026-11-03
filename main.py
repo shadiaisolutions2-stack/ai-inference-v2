@@ -256,6 +256,18 @@ def _nms(boxes: np.ndarray, scores: np.ndarray, threshold: float) -> list[int]:
     return kept
 
 
+def _coerce_confidence_threshold(value: Any, default: float = CONFIDENCE_THRESHOLD) -> float:
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not np.isfinite(parsed):
+        return default
+    return float(np.clip(parsed, 0.0, 1.0))
+
+
 def _postprocess(
     output: Any,
     width: int,
@@ -263,7 +275,9 @@ def _postprocess(
     scale: float,
     pad_x: int,
     pad_y: int,
+    confidence_threshold: float | None = None,
 ) -> list[dict[str, Any]]:
+    threshold = _coerce_confidence_threshold(confidence_threshold, CONFIDENCE_THRESHOLD)
     predictions = np.asarray(output)
     if predictions.ndim == 3:
         if predictions.shape[0] != 1:
@@ -282,7 +296,7 @@ def _postprocess(
     scores_by_class = predictions[:, 4:]
     class_ids = np.argmax(scores_by_class, axis=1)
     scores = scores_by_class[np.arange(scores_by_class.shape[0]), class_ids]
-    valid = np.isfinite(scores) & (scores >= CONFIDENCE_THRESHOLD)
+    valid = np.isfinite(scores) & (scores >= threshold)
     candidate_indices = np.flatnonzero(valid)
     if candidate_indices.size > MAX_CANDIDATES:
         best = np.argpartition(scores[candidate_indices], -MAX_CANDIDATES)[-MAX_CANDIDATES:]
@@ -363,6 +377,21 @@ async def analyze(
     if len(image_bytes) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="Image exceeds the upload limit.")
 
+    confidence_threshold = CONFIDENCE_THRESHOLD
+    try:
+        form = await request.form()
+        raw_confidence_threshold = form.get("confidence_threshold")
+        if raw_confidence_threshold is None:
+            payload = await request.json()
+            if isinstance(payload, dict):
+                raw_confidence_threshold = payload.get("confidence_threshold")
+        confidence_threshold = _coerce_confidence_threshold(
+            raw_confidence_threshold,
+            CONFIDENCE_THRESHOLD,
+        )
+    except Exception:
+        pass
+
     tensor, width, height, scale, pad_x, pad_y = _preprocess(image_bytes)
     try:
         async with request.app.state.inference_lock:
@@ -371,7 +400,15 @@ async def analyze(
                 None,
                 {request.app.state.input_name: tensor},
             )
-        predictions = _postprocess(outputs[0], width, height, scale, pad_x, pad_y)
+        predictions = _postprocess(
+            outputs[0],
+            width,
+            height,
+            scale,
+            pad_x,
+            pad_y,
+            confidence_threshold,
+        )
     except HTTPException:
         raise
     except Exception as exc:
